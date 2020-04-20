@@ -5,7 +5,7 @@ defmodule Carrier.Server do
   services as well.
   """
 
-  @smarty_streets_address "https://api.smartystreets.com/street-address"
+  @smarty_streets_address "https://us-street.api.smartystreets.com/street-address"
 
   use GenServer
 
@@ -111,7 +111,7 @@ defmodule Carrier.Server do
   # Request headers to send to SmartyStreets
   defp headers do
     [
-      "Content-Type": "application/json",
+      "Content-Type": "application/json; charset=utf-8",
       "Accept": "application/json",
       "X-Standardize-Only": "true"
     ]
