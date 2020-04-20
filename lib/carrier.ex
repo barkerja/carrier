@@ -8,9 +8,7 @@ defmodule Carrier do
   adding to `application` in `mix.exs` or explicitly by calling it directly.
   """
   def start(_type, _args) do
-    import Supervisor.Spec, warn: false
-
-    children = [worker(Server, [])]
+    children = [Server]
     opts     = [strategy: :one_for_one, name: Carrier.Supervisor]
 
     Supervisor.start_link children, opts

@@ -18,6 +18,8 @@ defmodule Carrier.Server do
   def start_link(_state \\ nil, _opts \\ nil),
     do: GenServer.start_link(__MODULE__, nil, name: __MODULE__)
 
+  def init(state), do: {:ok, state}
+
   def verify_one({street, city, state, zip}),
     do: GenServer.call(__MODULE__, {:verify_one, {street, city, state, zip}})
 
