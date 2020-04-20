@@ -1,7 +1,7 @@
 defmodule Carrier.Mixfile do
   use Mix.Project
 
-  @version "1.0.5"
+  @version "1.0.6"
 
   def project do
     [
@@ -29,7 +29,7 @@ defmodule Carrier.Mixfile do
 
   defp deps do
     [
-      {:httpoison, "~> 0.13"},
+      {:httpoison, "~> 1.6"},
       {:poison, "~> 3.1"},
       {:coverex, "~> 1.4.1", only: :test},
       {:ex_doc, "~> 0.10",  only: :dev}
