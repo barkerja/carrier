@@ -60,8 +60,8 @@ defmodule Carrier do
 
   Easy!
   """
-  def verify_one({street, city, state, zip}),
-    do: Server.verify_one({street, city, state, zip})
+  def verify_one({street, street_2, city, state, zip}),
+    do: Server.verify_one({street, street_2, city, state, zip})
 
   @doc """
   This is the public method for validating many addresses. This accepts a list

@@ -20,8 +20,8 @@ defmodule Carrier.Server do
 
   def init(state), do: {:ok, state}
 
-  def verify_one({street, city, state, zip}),
-    do: GenServer.call(__MODULE__, {:verify_one, {street, city, state, zip}})
+  def verify_one({street, street_2, city, state, zip}),
+    do: GenServer.call(__MODULE__, {:verify_one, {street, street_2, city, state, zip}})
 
   def verify_many(addresses),
     do: GenServer.call(__MODULE__, {:verify_many, addresses})
@@ -32,8 +32,8 @@ defmodule Carrier.Server do
   ## Don't call these functions directly; use the API above                  ##
   #############################################################################
 
-  def handle_call({:verify_one, {street, city, state, zip}}, _from, nil),
-    do: {:reply, verify_address({street, city, state, zip}), nil}
+  def handle_call({:verify_one, {street, street_2, city, state, zip}}, _from, nil),
+    do: {:reply, verify_address({street, street_2, city, state, zip}), nil}
 
   def handle_call({:verify_many, addresses}, _from, nil),
     do: {:reply, verify_addresses(addresses), nil}
@@ -43,15 +43,15 @@ defmodule Carrier.Server do
   #############################################################################
 
   # Verify a single address
-  defp verify_address({street, city, state, zip}) do
+  defp verify_address({street, street_2, city, state, zip}) do
     {:ok, resp} =
-      validator_url({street, city, state, zip})
+      validator_url({street, street_2, city, state, zip})
       |> HTTPoison.get(headers())
 
     # If there's an empty response, that means there was no match. If there are
     # multiple matches, we are only going to use the first match.
     case Poison.decode!(resp.body) do
-      [] -> {:invalid, {street, city, state, zip}}
+      [] -> {:invalid, {street, street_2, city, state, zip}}
       [match | _rest] -> {:valid, parse_match(match)}
     end
   end
@@ -60,15 +60,17 @@ defmodule Carrier.Server do
   defp verify_addresses(addresses) do
     body =
       addresses
-      |> Enum.with_index
-      |> Enum.map(&(address_to_map &1))
-      |> Poison.encode!
+      |> Enum.with_index()
+      |> Enum.map(&address_to_map(&1))
+      |> Poison.encode!()
+
     {:ok, resp} =
       validator_url()
       |> HTTPoison.post(body, headers())
+
     case Poison.decode!(resp.body) do
       [] -> addresses
-      matches -> parse_matches addresses, matches
+      matches -> parse_matches(addresses, matches)
     end
   end
 
@@ -76,9 +78,9 @@ defmodule Carrier.Server do
   defp parse_matches(input, output) do
     input
     |> Enum.with_index()
-    |> Enum.map(fn({{street, city, state, zip}, index}) ->
-      case Enum.find(output, fn(%{"input_index" => id}) -> id == index end) do
-        nil -> {:invalid, {street, city, state, zip}}
+    |> Enum.map(fn {{street, street_2, city, state, zip}, index} ->
+      case Enum.find(output, fn %{"input_index" => id} -> id == index end) do
+        nil -> {:invalid, {street, street_2, city, state, zip}}
         match -> {:valid, parse_match(match)}
       end
     end)
@@ -86,19 +88,24 @@ defmodule Carrier.Server do
 
   # Parse a match
   defp parse_match(match),
-    do: {parse_street(match), parse_city(match), parse_state(match), parse_zip(match)}
+    do:
+      {parse_street(match), parse_street2(match), parse_city(match), parse_state(match),
+       parse_zip(match)}
 
   # Parsers to get the street, city, state, and zipcode from a match.
   defp parse_street(match), do: match["delivery_line_1"]
+  defp parse_street2(match), do: match["delivery_line_2"]
   defp parse_city(match), do: match["components"]["city_name"]
   defp parse_state(match), do: match["components"]["state_abbreviation"]
+
   defp parse_zip(match),
     do: "#{match["components"]["zipcode"]}-#{match["components"]["plus4_code"]}"
 
   # Converts the address into a map so that we can POST them as JSON.
-  defp address_to_map({{street, city, state, zip}, index}) do
+  defp address_to_map({{street, street_2, city, state, zip}, index}) do
     %{
       "street" => street,
+      "street2" => street_2,
       "city" => city,
       "state" => state,
       "zipcode" => zip,
@@ -106,15 +113,15 @@ defmodule Carrier.Server do
     }
   end
 
-  defp address_to_qp({street, city, state, zip}) do
-    "street=#{street}&city=#{city}&state=#{state}&zipcode=#{zip}"
+  defp address_to_qp({street, street_2, city, state, zip}) do
+    "street=#{street}&street2=#{street_2}&city=#{city}&state=#{state}&zipcode=#{zip}"
   end
 
   # Request headers to send to SmartyStreets
   defp headers do
     [
       "Content-Type": "application/json; charset=utf-8",
-      "Accept": "application/json",
+      Accept: "application/json",
       "X-Standardize-Only": "true"
     ]
   end
