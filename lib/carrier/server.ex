@@ -117,7 +117,10 @@ defmodule Carrier.Server do
     components =
       components
       |> Tuple.to_list()
-      |> Enum.map(&URI.encode_www_form/1)
+      |> Enum.map(fn
+        nil -> nil
+        value -> URI.encode_www_form(value)
+      end)
       |> List.to_tuple()
 
     {street, street_2, city, state, zip} = components
