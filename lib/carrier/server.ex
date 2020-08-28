@@ -113,7 +113,15 @@ defmodule Carrier.Server do
     }
   end
 
-  defp address_to_qp({street, street_2, city, state, zip}) do
+  defp address_to_qp(components) do
+    components =
+      components
+      |> Tuple.to_list()
+      |> Enum.map(&URI.encode_www_form/1)
+      |> List.to_tuple()
+
+    {street, street_2, city, state, zip} = components
+
     "street=#{street}&street2=#{street_2}&city=#{city}&state=#{state}&zipcode=#{zip}"
   end
 
